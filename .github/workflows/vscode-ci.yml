@@ -53,6 +53,7 @@ jobs:
 
       - name: Merge templates
         run: |
+          rm -frv void-packages/srcpkgs/vscode
           cp -frv main-repo/srcpkgs/vscode void-packages/srcpkgs/
 
       - name: Build VSCode
