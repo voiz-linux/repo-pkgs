@@ -1,0 +1,46 @@
+# Template file for 'vscode'
+pkgname=vscode
+version=1.137.0
+revision=1
+archs="x86_64"
+depends="libxkbfile gnupg gtk+3 libsecret nss libgcc libnotify libXScrnSaver glibc lsof shared-mime-info xdg-utils alsa-lib glib libdbusmenu-glib icu"
+short_desc="Visual Studio Code (vscode): Editor for building and debugging modern web and cloud applications"
+maintainer="VoizLinux <iz@anrix.org>"
+license="custom:commercial"
+homepage="https://code.visualstudio.com/"
+repository=nonfree
+restricted=yes
+nostrip=yes
+
+_channel=stable
+distfiles="https://update.code.visualstudio.com/${version}/linux-deb-x64/${_channel}>code_${version}_amd64.deb"
+checksum=fd4dff72c44598d3acb885b448256f5d82cf53f59538d97fc7d3c8d8d9d574d3
+
+create_wrksrc=yes
+
+do_extract() {
+	# 'ar' is part of binutils (in base-chroot) and natively unpacks .deb files
+	ar x ${XBPS_SRCDISTDIR}/${pkgname}-${version}/code_${version}_amd64.deb
+	tar -xf data.tar.xz -C .
+}
+
+do_install() {
+	vcopy usr/share usr
+
+	vmkdir usr/bin
+	cat <<-'EOF' > ${DESTDIR}/usr/bin/code
+		#!/bin/sh
+		XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-~/.config}
+		if [ -f "$XDG_CONFIG_HOME/code-flags.conf" ]; then
+			CODE_USER_FLAGS="$(sed 's/#.*//' "$XDG_CONFIG_HOME/code-flags.conf" | tr '\n' ' ')"
+		fi
+		exec /usr/share/code/bin/code "$@" $CODE_USER_FLAGS
+	EOF
+	chmod +x ${DESTDIR}/usr/bin/code
+
+	vsed -i -e 's/^\(Exec=\)[^ ]*/\1code/g' \
+		${DESTDIR}/usr/share/applications/*.desktop
+
+	chmod u-s ${DESTDIR}/usr/share/code/chrome-sandbox
+	vlicense usr/share/code/resources/app/LICENSE.rtf
+}
