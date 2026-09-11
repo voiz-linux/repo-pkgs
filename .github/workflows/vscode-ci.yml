@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'srcpkgs/google-chrome/**'
+      - 'srcpkgs/vscode/**'
   workflow_dispatch:
 
 jobs:
