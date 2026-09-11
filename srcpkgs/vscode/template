@@ -1,6 +1,7 @@
 # Template file for 'vscode'
 pkgname=vscode
 version=1.137.0
+CXXFLAGS="-std=c++20"
 revision=1
 archs="x86_64"
 depends="libxkbfile gnupg gtk+3 libsecret nss libgcc libnotify libXScrnSaver glibc lsof shared-mime-info xdg-utils alsa-lib glib libdbusmenu-glib icu"
