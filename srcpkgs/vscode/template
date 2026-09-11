@@ -26,6 +26,10 @@ do_extract() {
 }
 
 do_install() {
+	vlicense usr/share/code/resources/app/LICENSE.rtf
+	vmkdir usr/lib
+	vcopy usr/share/code usr/lib/
+	rm -rf usr/share/code
 	vcopy usr/share usr
 
 	vmkdir usr/bin
@@ -35,13 +39,13 @@ do_install() {
 		if [ -f "$XDG_CONFIG_HOME/code-flags.conf" ]; then
 			CODE_USER_FLAGS="$(sed 's/#.*//' "$XDG_CONFIG_HOME/code-flags.conf" | tr '\n' ' ')"
 		fi
-		exec /usr/share/code/bin/code "$@" $CODE_USER_FLAGS
+		exec /usr/lib/code/bin/code "$@" $CODE_USER_FLAGS
 	EOF
 	chmod +x ${DESTDIR}/usr/bin/code
 
 	vsed -i -e 's/^\(Exec=\)[^ ]*/\1code/g' \
+		-e 's|/usr/share/code|/usr/lib/code|g' \
 		${DESTDIR}/usr/share/applications/*.desktop
 
-	chmod u-s ${DESTDIR}/usr/share/code/chrome-sandbox
-	vlicense usr/share/code/resources/app/LICENSE.rtf
+	chmod u-s ${DESTDIR}/usr/lib/code/chrome-sandbox
 }
