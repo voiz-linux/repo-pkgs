@@ -1,4 +1,4 @@
-name: Build Chrome
+name: Build VSCode
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build (Google Chrome) x86_64
+    name: Build (VS Code) x86_64
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/void-linux/void-glibc-full
@@ -55,7 +55,7 @@ jobs:
         run: |
           cp -frv main-repo/srcpkgs/google-chrome void-packages/srcpkgs/
 
-      - name: Build Chrome
+      - name: Build VSCode
         working-directory: void-packages
         run: |
           /bin/bash ./xbps-src -j$(nproc) pkg vscode
