@@ -53,7 +53,7 @@ jobs:
 
       - name: Merge templates
         run: |
-          cp -frv main-repo/srcpkgs/google-chrome void-packages/srcpkgs/
+          cp -frv main-repo/srcpkgs/vscode void-packages/srcpkgs/
 
       - name: Build VSCode
         working-directory: void-packages
