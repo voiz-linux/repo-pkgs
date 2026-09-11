@@ -14,7 +14,7 @@ homepage="https://www.google.com/chrome/"
 case "$XBPS_TARGET_MACHINE" in
 x86_64)
 	distfiles="https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-${_channel}_${version}-1_amd64.deb"
-	checksum=37a3c7e2178de5e6c16e9381c4a998ea
+	checksum=9bb44e33031c2f2857cf36b4343051a12f93058e4b781e3c76313df87f6c8d32
 	;;
 *)
 	broken="No distfiles available for this target"
