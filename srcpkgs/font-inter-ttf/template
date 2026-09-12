@@ -1,14 +1,14 @@
 # Template file for 'font-inter-ttf'
 pkgname=font-inter-ttf
 version=4.1
-revision=1
+revision=2
 depends="font-util xbps-triggers"
 short_desc="The Inter font family"
 maintainer="VoizLinux <iz@anrix.org>"
 license="OFL-1.1"
 homepage="https://rsms.me/inter"
 distfiles="https://github.com/rsms/inter/releases/download/v${version}/Inter-${version}.zip"
-checksum=
+checksum=9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e
 provides="font:monospace-0_1"
 
 font_dirs="extras/ttf"
