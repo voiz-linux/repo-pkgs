@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - build-ci
     paths:
       - 'srcpkgs/font-inter-ttf/**'
   workflow_dispatch:
