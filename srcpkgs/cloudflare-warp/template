@@ -4,9 +4,9 @@ version=2026.7.1377.0
 revision=1
 archs="x86_64"
 hostmakedepends="patchelf"
-depends="dbus desktop-file-utils hicolor-icon-theme gtk+3 libwebkit2gtk41 pciutils libayatana-appindicator nss nspr nftables"
+depends="dbus desktop-file-utils hicolor-icon-theme gtk+3 libwebkit2gtk41 pciutils libayatana-appindicator nss nspr nftables libpcap"
 short_desc="Cloudflare WARP client for Linux"
-maintainer="VoizLinux <iz@anrix.org>"
+maintainer="Your Name <your.email@example.com>"
 license="custom:Proprietary"
 homepage="https://1.1.1.1/"
 distfiles="https://downloads.cloudflareclient.com/v1/download/trixie-intel/version/${version}>${pkgname}-${version}.deb"
@@ -14,6 +14,8 @@ checksum=5afe38d0536b49bd09509264b68018e5440b28538323e1984d8096c512062658
 repository=nonfree
 restricted=yes
 nostrip=yes
+
+ignore_shlibs="libjvm.so"
 
 make_dirs="
  /var/lib/cloudflare-warp 0755 root root
@@ -27,11 +29,21 @@ do_extract() {
 }
 
 do_install() {
-	vmkdir usr/bin
-	cp -a bin/* ${DESTDIR}/usr/bin/
+	msg_normal "Patching libpcap SONAME for Void Linux...\n"
+	patchelf --replace-needed libpcap.so.0.8 libpcap.so.1 bin/warp-svc
+	patchelf --replace-needed libpcap.so.0.8 libpcap.so.1 bin/warp-dex 2>/dev/null || true
+	patchelf --replace-needed libpcap.so.0.8 libpcap.so.1 bin/warp-diag 2>/dev/null || true
+
+	vbin bin/warp-cli
+	vbin bin/warp-dex
+	vbin bin/warp-diag
+	vbin bin/warp-svc
 
 	vmkdir usr/lib
 	cp -a usr/lib/warp ${DESTDIR}/usr/lib/
+
+	vmkdir usr/bin
+	ln -sf /usr/lib/warp/warp-taskbar ${DESTDIR}/usr/bin/warp-taskbar
 
 	msg_normal "Removing RPATHs via patchelf...\n"
 	patchelf --remove-rpath "${DESTDIR}/usr/lib/warp/lib/crashpad_handler"
@@ -51,7 +63,7 @@ do_install() {
 	fi
 
 	vsv warp-svc
-    
+
 	if [ -f usr/share/doc/cloudflare-warp/copyright ]; then
 		vlicense usr/share/doc/cloudflare-warp/copyright
 	fi
