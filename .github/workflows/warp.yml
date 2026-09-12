@@ -75,6 +75,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: chrome-packages
+          name: cloudflare-warp-packages
           path: void-packages/hostdir/binpkgs/*
           retention-days: 1

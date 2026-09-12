@@ -1,7 +1,7 @@
 # Template file for 'cloudflare-warp'
 pkgname=cloudflare-warp
 version=2026.7.1377.0
-revision=1
+revision=2
 archs="x86_64"
 hostmakedepends="patchelf"
 depends="dbus desktop-file-utils hicolor-icon-theme gtk+3 libwebkit2gtk41 pciutils libayatana-appindicator nss nspr nftables libpcap"
