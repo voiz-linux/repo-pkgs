@@ -1,0 +1,80 @@
+name: Build Inter TTF
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'srcpkgs/font-inter-ttf/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (font-inter-ttf) x86_64
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/void-linux/void-glibc-full
+    env:
+      ARCH: x86_64
+      BOOTSTRAP: x86_64
+      TEST: 0
+
+    steps:
+      - name: Configure mirrors
+        run: |
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|https://repo-default.voidlinux.org|https://repo-fastly.voidlinux.org|g' /etc/xbps.d/*-repository-*.conf
+          xbps-install -S
+
+      - name: Install dependencies
+        run: |
+          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y nodejs git curl base-devel bash sudo
+          
+      - name: Checkout your repo
+        uses: actions/checkout@v4
+        with:
+          path: main-repo
+          persist-credentials: false
+
+      - name: Checkout void-packages
+        run: |
+          git clone --depth=1 https://github.com/void-linux/void-packages.git void-packages
+
+      - name: Configure ethereal mode
+        working-directory: void-packages
+        run: |
+          cat <<EOF > etc/conf
+          XBPS_ALLOW_CHROOT_BREAKOUT=yes
+          XBPS_CHROOT_CMD=ethereal
+          XBPS_MIRROR=https://repo-fastly.voidlinux.org/current
+          EOF
+          ln -s / masterdir
+
+      - name: Merge templates
+        run: |
+          rm -frv void-packages/srcpkgs/font-inter-ttf
+          cp -frv main-repo/srcpkgs/font-inter-ttf void-packages/srcpkgs/
+
+
+      - name: Build Inter TTF
+        working-directory: void-packages
+        run: |
+          /bin/bash ./xbps-src -j$(nproc) pkg font-inter-ttf
+
+      - name: Sign and Index
+        working-directory: void-packages/hostdir/binpkgs
+        env:
+          PRIV_KEY: ${{ secrets.PRIV_KEY }}
+        run: |
+          echo "$PRIV_KEY" > private.pem
+          xbps-rindex -a *.xbps
+          xbps-rindex -s --signedby "VoizLinux <iz@anrix.org>" --privkey private.pem $PWD
+          xbps-rindex -S --privkey private.pem *.xbps
+          rm private.pem
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: font-inter-ttf-packages
+          path: void-packages/hostdir/binpkgs/*
+          retention-days: 1
