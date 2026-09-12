@@ -1,24 +1,20 @@
 # Template file for 'font-inter-ttf'
 pkgname=font-inter-ttf
 version=4.1
-revision=2
-depends="font-util xbps-triggers"
-short_desc="The Inter font family"
+revision=3
+depends="font-util"
+short_desc="The Inter typeface family"
 maintainer="VoizLinux <iz@anrix.org>"
 license="OFL-1.1"
-homepage="https://rsms.me/inter"
+homepage="https://rsms.me/inter/"
 distfiles="https://github.com/rsms/inter/releases/download/v${version}/Inter-${version}.zip"
 checksum=9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e
-provides="font:monospace-0_1"
-
-font_dirs="extras/ttf"
-
-do_extract() {
-    unzip ${XBPS_SRCDISTDIR}/Inter-${version}.zip -d "${wrksrc}"
-}
+font_dirs="/usr/share/fonts/TTF"
 
 do_install() {
-    for font in Inter-*.ttf; do
-        install -Dm644 "$font" "${wrksrc}/${font_dirs}/$font"
-    done
+	vmkdir usr/share/fonts/TTF
+
+	for font in extras/ttf/Inter-*.ttf; do
+		vinstall "$font" 644 usr/share/fonts/TTF
+	done
 }
