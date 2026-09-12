@@ -1,7 +1,7 @@
 # Template file for 'font-inter-ttf'
 pkgname=font-inter-ttf
 version=4.1
-revision=3
+revision=4
 depends="font-util"
 short_desc="The Inter typeface family"
 maintainer="VoizLinux <iz@anrix.org>"
