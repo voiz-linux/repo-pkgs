@@ -57,7 +57,9 @@ jobs:
           cp -frv main-repo/srcpkgs/font-inter-ttf void-packages/srcpkgs/
 
       - name: Prepare xbps-src
-        run: ./xbps-src binary-bootstrap
+        working-directory: void-packages
+        run: |
+           /bin/bash ./xbps-src binary-bootstrap
 
       - name: Build Inter TTF
         working-directory: void-packages
