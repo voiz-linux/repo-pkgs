@@ -14,7 +14,7 @@ provides="font:monospace-0_1"
 font_dirs="extras/ttf"
 
 do_extract() {
-    unzip ${DISTDIR}/Inter-${version}.zip -d "${wrksrc}"
+    unzip ${XBPS_SRCDISTDIR}/Inter-${version}.zip -d "${wrksrc}"
 }
 
 do_install() {
