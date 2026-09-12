@@ -27,9 +27,8 @@ do_extract() {
 }
 
 do_install() {
-	for f in bin/*; do
-		vbin "$f"
-	done
+	vmkdir usr/bin
+	cp -a bin/* ${DESTDIR}/usr/bin/
 
 	vmkdir usr/lib
 	cp -a usr/lib/warp ${DESTDIR}/usr/lib/
@@ -52,7 +51,7 @@ do_install() {
 	fi
 
 	vsv warp-svc
-
+    
 	if [ -f usr/share/doc/cloudflare-warp/copyright ]; then
 		vlicense usr/share/doc/cloudflare-warp/copyright
 	fi
