@@ -29,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y nodejs git curl base-devel bash sudo
+          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y nodejs-lts git curl base-devel bash sudo file
           
       - name: Checkout your repo
         uses: actions/checkout@v4
@@ -56,6 +56,8 @@ jobs:
           rm -frv void-packages/srcpkgs/font-inter-ttf
           cp -frv main-repo/srcpkgs/font-inter-ttf void-packages/srcpkgs/
 
+      - name: Prepare xbps-src
+        run: ./xbps-src binary-bootstrap
 
       - name: Build Inter TTF
         working-directory: void-packages
