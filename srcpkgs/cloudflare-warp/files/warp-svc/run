@@ -1,0 +1,6 @@
+#!/bin/sh
+
+mkdir -p /run/cloudflare-warp
+
+exec 2>&1
+exec /usr/bin/warp-svc

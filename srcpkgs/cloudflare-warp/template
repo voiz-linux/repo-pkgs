@@ -1,0 +1,66 @@
+# Template file for 'cloudflare-warp'
+pkgname=cloudflare-warp
+version=2026.7.1377.0
+revision=1
+archs="x86_64"
+hostmakedepends="patchelf"
+depends="dbus desktop-file-utils hicolor-icon-theme gtk+3 webkit2gtk pciutils libappindicator nss nspr nftables"
+short_desc="Cloudflare WARP client for Linux"
+maintainer="VoizLinux <iz@anrix.org>"
+license="custom:Proprietary"
+homepage="https://1.1.1.1/"
+distfiles="https://downloads.cloudflareclient.com/v1/download/trixie-intel/version/${version}>${pkgname}-${version}.deb"
+checksum=SKIP
+repository=nonfree
+restricted=yes
+nostrip=yes
+
+make_dirs="
+ /var/lib/cloudflare-warp 0755 root root
+ /var/log/cloudflare-warp 0755 root root"
+
+do_extract() {
+	local deb_file="${XBPS_SRCDISTDIR}/${pkgname}-${version}/${pkgname}-${version}.deb"
+	msg_normal "Extracting Debian package...\n"
+	ar x "$deb_file"
+	tar -xf data.tar.*
+}
+
+do_install() {
+	for f in bin/*; do
+		vbin "$f"
+	done
+
+	vmkdir usr/lib
+	cp -a usr/lib/warp ${DESTDIR}/usr/lib/
+
+	msg_normal "Removing RPATHs via patchelf...\n"
+	patchelf --remove-rpath "${DESTDIR}/usr/lib/warp/lib/crashpad_handler"
+	patchelf --remove-rpath "${DESTDIR}/usr/lib/warp/lib/libdartjni.so"
+	for plugin in ${DESTDIR}/usr/lib/warp/lib/lib*_plugin.so; do
+		patchelf --remove-rpath "$plugin"
+	done
+
+	vmkdir usr/share
+	cp -a usr/share/applications ${DESTDIR}/usr/share/
+	cp -a usr/share/dbus-1 ${DESTDIR}/usr/share/
+	cp -a usr/share/icons ${DESTDIR}/usr/share/
+    
+	if [ -d "etc/xdg" ]; then
+		vmkdir etc
+		cp -a etc/xdg ${DESTDIR}/etc/
+	fi
+
+	vsv warp-svc
+
+	if [ -f usr/share/doc/cloudflare-warp/copyright ]; then
+		vlicense usr/share/doc/cloudflare-warp/copyright
+	fi
+}
+
+post_remove() {
+	if command -v nft >/dev/null 2>&1; then
+		msg_normal "Cleaning up Cloudflare WARP nftables rules...\n"
+		nft delete table inet cloudflare-warp 2>/dev/null || true
+	fi
+}
