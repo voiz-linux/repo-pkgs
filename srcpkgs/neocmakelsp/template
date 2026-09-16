@@ -1,7 +1,7 @@
 # Template file for 'neocmakelsp'
 pkgname=neocmakelsp
 version=0.6.22
-revision=2
+revision=1
 archs="x86_64"
 create_wrksrc=yes
 short_desc="Another CMake LSP"
@@ -16,8 +16,10 @@ case "$XBPS_TARGET_MACHINE" in
 		;;
 esac
 
-distfiles="${homepage}/releases/download/v${version}/${_filename}>${_filename}.bin"
+distfiles="${homepage}/releases/download/v${version}/${_filename}"
+
+skip_extraction="${_filename}"
 
 do_install() {
-	vinstall "${_filename}.bin" 755 usr/bin neocmakelsp
+	vinstall "${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_filename}" 755 usr/bin neocmakelsp
 }
