@@ -73,6 +73,7 @@ jobs:
       - name: Merge template
         run: |
           rm -fr "void-packages/${{ matrix.path }}"
+          mkdir -p "void-packages/srcpkgs/${{ matrix.path }}"
           cp -fr "${{ matrix.path }}" "void-packages/srcpkgs/"
 
       - name: Prepare xbps-src
