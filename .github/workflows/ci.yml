@@ -1,40 +1,47 @@
-name: Check build
+name: Build packages
 
 on:
   push:
     branches:
+      - main
       - 'ci-**'
     paths:
       - 'srcpkgs/**'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Build changed packages.
   build:
-    name: Build packages
+    name: Build ${{ matrix.package }} (${{ matrix.arch }})
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/void-linux/void-${{ matrix.config.libc }}-full
-      options: --platform ${{ matrix.config.platform }} --privileged
+      image: ghcr.io/void-linux/void-${{ matrix.libc }}-full
+      options: --platform ${{ matrix.platform }} --privileged
       volumes:
         - /dev:/dev
       env:
-        ARCH: '${{ matrix.config.arch }}'
-        BOOTSTRAP: '${{ matrix.config.host }}'
-        TEST: '${{ matrix.config.test }}'
+        ARCH: '${{ matrix.arch }}'
+        BOOTSTRAP: '${{ matrix.host }}'
+        TEST: '${{ matrix.test }}'
+        XBPS_ALLOW_RESTRICTED: '${{ matrix.restricted }}'
 
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - { arch: x86_64,       host: x86_64,      libc: glibc, platform: linux/amd64, test: 1 }
-          - { arch: aarch64,      host: x86_64,      libc: glibc, platform: linux/amd64, test: 0 }
-          - { arch: x86_64-musl,  host: x86_64-musl, libc: musl,  platform: linux/amd64, test: 1 }
-          - { arch: aarch64-musl, host: x86_64-musl, libc: musl,  platform: linux/amd64, test: 0 }
+        include:
+        - { package: glsl_analyzer, path: srcpkgs/glsl_analyzer, arch: x86_64,       host: x86_64,      libc: glibc, platform: linux/amd64, test: 1, restricted: 0 }
+        - { package: glsl_analyzer, path: srcpkgs/glsl_analyzer, arch: aarch64,      host: x86_64,      libc: glibc, platform: linux/amd64, test: 0, restricted: 0 }
+        - { package: glsl_analyzer, path: srcpkgs/glsl_analyzer, arch: x86_64-musl,  host: x86_64-musl, libc: musl,  platform: linux/amd64, test: 1, restricted: 0 }
+        - { package: glsl_analyzer, path: srcpkgs/glsl_analyzer, arch: aarch64-musl, host: x86_64-musl, libc: musl,  platform: linux/amd64, test: 0, restricted: 0 }
+        - { package: ayugram-desktop, path: srcpkgs/ayugram-desktop, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 0 }
+        - { package: cloudflare-warp, path: srcpkgs/cloudflare-warp, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 1 }
+        - { package: font-inter-ttf, path: srcpkgs/font-inter-ttf, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 0 }
+        - { package: google-chrome, path: srcpkgs/google-chrome, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 1 }
+        - { package: vscode, path: srcpkgs/vscode, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 1 }
 
     steps:
       - name: Prepare container
@@ -43,7 +50,7 @@ jobs:
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
           sed -i 's|repo-default|repo-ci|g' /etc/xbps.d/*-repository-*.conf
           # install dependencies
-          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y sudo bash curl git
+          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y base-devel nodejs-lts sudo bash curl git file
           # create non-root user
           useradd -G xbuilder -M builder
 
@@ -54,35 +61,46 @@ jobs:
         working-directory: void-packages
         run: |
           cat <<EOF > etc/conf
+          $(if [ "${{ matrix.restricted }}" = "1" ]; then echo XBPS_ALLOW_RESTRICTED=yes; fi)
           XBPS_ALLOW_CHROOT_BREAKOUT=yes
           XBPS_CHROOT_CMD=ethereal
           XBPS_MIRROR=https://repo-fastly.voidlinux.org/current
           EOF
           ln -s / masterdir
 
-      - name: Find changed templates
-        run: sudo -Eu builder common/travis/changed_templates.sh
-
-      - name: Build and check packages
-        run: sudo -Eu builder common/travis/build.sh "$BOOTSTRAP" "$ARCH" "$TEST"
-
-      - name: Show files
-        run: sudo -Eu builder common/travis/show_files.sh "$BOOTSTRAP" "$ARCH"
-
-      - name: Compare to previous
-        run: sudo -Eu builder common/travis/xpkgdiff.sh "$BOOTSTRAP" "$ARCH"
-
-      - name: Check file conflicts
-        if: matrix.config.arch == 'x86_64' # the arch indexed in xlocate
+      - name: Merge template
         run: |
-          if [ -s /tmp/templates ]; then
-              export XDG_CACHE_HOME="$PWD/.cache"
-              sudo -Eu builder xlocate -S &&
-              sudo -Eu builder common/scripts/lint-conflicts
+          rm -fr "void-packages/${{ matrix.path }}"
+          cp -fr "${{ matrix.path }}" "void-packages/srcpkgs/"
+
+      - name: Prepare xbps-src
+        working-directory: void-packages
+        run: /bin/bash ./xbps-src binary-bootstrap
+
+      - name: Build package
+        working-directory: void-packages
+        run: |
+          /bin/bash ./xbps-src -j$(nproc) pkg "${{ matrix.package }}"
+
+      - name: Sign and index
+        working-directory: void-packages/hostdir/binpkgs
+        env:
+          PRIV_KEY: ${{ secrets.PRIV_KEY }}
+        run: |
+          repo_dir="."
+          if [ "${{ matrix.restricted }}" = "1" ]; then
+            repo_dir="nonfree"
           fi
+          cd "$repo_dir"
+          echo "$PRIV_KEY" > private.pem
+          xbps-rindex -a *.xbps
+          xbps-rindex -s --signedby "VoizLinux <iz@anrix.org>" --privkey private.pem "$PWD"
+          xbps-rindex -S --privkey private.pem *.xbps
+          rm private.pem
 
-      - name: Verify repository state
-        run: |
-          mkdir -p /check-install &&
-          chown builder:builder /check-install &&
-          sudo -Eu builder common/travis/check-install.sh "$BOOTSTRAP" "$ARCH"
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}-${{ matrix.arch }}
+          path: void-packages/hostdir/binpkgs/*
+          retention-days: 7

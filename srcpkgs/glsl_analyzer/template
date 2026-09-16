@@ -1,0 +1,28 @@
+# Template file for 'glsl_analyzer'
+pkgname=glsl_analyzer
+version=1.7.1
+revision=1
+archs="x86_64* aarch64*"
+provides="glsl_analyzer-${version}_${revision}"
+conflicts="glsl_analyzer>=0"
+short_desc="Language server for the GLSL shading language"
+maintainer="VoizLinux <iz@anrix.org>"
+license="GPL-3.0-only"
+homepage="https://github.com/nolanderc/glsl_analyzer"
+distfiles="https://github.com/nolanderc/glsl_analyzer/releases/download/v${version}/${_carch}-linux-musl.zip>glsl_analyzer-${version}-${_carch}.zip"
+
+case "$XBPS_TARGET_MACHINE" in
+	x86_64*)
+		_carch="x86_64"
+		checksum=7c929b304e0d34abf4305d07895c409861f054613c3ae4070baa7ca15c916e7a
+		;;
+	aarch64*)
+		_carch="aarch64"
+		checksum=dda05d727979c34333b86562bb706122ab95d17cd7298665e8afbaba79f76ea6
+		;;
+esac
+
+
+do_install() {
+	vbin bin/glsl_analyzer
+}
