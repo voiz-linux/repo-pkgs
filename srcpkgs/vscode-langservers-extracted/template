@@ -1,0 +1,24 @@
+# Template file for 'vscode-langservers-extracted'
+pkgname=vscode-langservers-extracted
+version=4.10.0
+revision=1
+noarch=yes
+create_wrksrc=yes
+hostmakedepends="nodejs"
+depends="nodejs"
+short_desc="Language servers extracted from VSCode"
+maintainer="VoizLinux <iz@anrix.org>"
+license="MIT"
+homepage="https://github.com/hrsh7th/vscode-langservers-extracted"
+
+distfiles="https://registry.npmjs.org/${pkgname}/-/${pkgname}-${version}.tgz"
+checksum=d6e2d090d09c4b91daa74e9e7462a3d3f244efb96aa5111004cfffa49d6dc9ef
+
+skip_extraction="${pkgname}-${version}.tgz"
+
+do_install() {
+	local _tarball="${XBPS_SRCDISTDIR}/${pkgname}-${version}/${pkgname}-${version}.tgz"
+	tar xf "${_tarball}" package/LICENSE
+	npm install -g --cache "${wrksrc}/npm-cache" --prefix "${DESTDIR}/usr" "${_tarball}"
+	vlicense package/LICENSE
+}
