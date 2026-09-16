@@ -15,7 +15,7 @@ nostrip=yes
 
 _channel=stable
 distfiles="https://update.code.visualstudio.com/${version}/linux-deb-x64/${_channel}>code_${version}_amd64.deb"
-checksum=fd4dff72c44598d3acb885b448256f5d82cf53f59538d97fc7d3c8d8d9d574d3
+checksum=73389cdcef7e66171a2039d1e49b9530e5ed02937e6159d3e6af93484e63cbad
 
 create_wrksrc=yes
 
