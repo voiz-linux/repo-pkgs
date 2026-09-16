@@ -1,46 +1,84 @@
 name: Build packages
 
 on:
-  push:
-    branches:
-      - main
-      - ci
-    paths:
-      - 'srcpkgs/**'
   workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to build'
+        required: true
+        default: ''
+      x86_64:
+        description: 'Architecture x86_64'
+        required: true
+        type: choice
+        options:
+            - 'yes'
+            - 'no'
+      aarch64:
+        description: 'Architecture aarch64'
+        required: true
+        type: choice
+        options:
+            - 'yes'
+            - 'no'
+      test:
+        description: 'Run tests'
+        required: true
+        type: choice
+        options:
+            - 'yes'
+            - 'no'
+      restricted:
+        description: 'Allow restricted packages'
+        required: true
+        type: choice
+        options:
+            - 'yes'
+            - 'no'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    name: Select architectures
+    runs-on: ubuntu-latest
+    outputs:
+      architectures: ${{ steps.architectures.outputs.architectures }}
+    steps:
+      - name: Checkout repository
+        uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: Select architectures
+        id: architectures
+        env:
+          X86_64: ${{ inputs.x86_64 || 'yes' }}
+          AARCH64: ${{ inputs.aarch64 || 'yes' }}
+        run: |
+          architectures=$(sh ./.github/scripts/arch_type.sh "$X86_64" "$AARCH64")
+          echo "architectures=$architectures" >> "$GITHUB_OUTPUT"
+
   build:
-    name: Build ${{ matrix.package }} (${{ matrix.arch }})
+    needs: prepare
+    name: Build ${{ inputs.package || 'glsl_analyzer' }} (${{ matrix.arch }})
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/void-linux/void-${{ matrix.libc }}-full
-      options: --platform ${{ matrix.platform }} --privileged
+      image: ghcr.io/void-linux/void-glibc-full
+      options: --platform linux/amd64 --privileged
       volumes:
         - /dev:/dev
       env:
         ARCH: '${{ matrix.arch }}'
-        BOOTSTRAP: '${{ matrix.host }}'
-        TEST: '${{ matrix.test }}'
-        XBPS_ALLOW_RESTRICTED: '${{ matrix.restricted }}'
+        BOOTSTRAP: x86_64
+        TEST: "${{ inputs.test == 'yes' && 1 || 0 }}"
+        XBPS_ALLOW_RESTRICTED: "${{ inputs.restricted == 'yes' && 1 || 0 }}"
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - { package: neocmakelsp, path: srcpkgs/neocmakelsp, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 1, restricted: 0 }
-        - { package: glsl_analyzer, path: srcpkgs/glsl_analyzer, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 1, restricted: 0 }
-        - { package: glsl_analyzer, path: srcpkgs/glsl_analyzer, arch: aarch64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 0 }
-        # - { package: ayugram-desktop, path: srcpkgs/ayugram-desktop, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 0 }
-        - { package: cloudflare-warp, path: srcpkgs/cloudflare-warp, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 1 }
-        - { package: font-inter-ttf, path: srcpkgs/font-inter-ttf, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 0 }
-        - { package: google-chrome, path: srcpkgs/google-chrome, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 1 }
-        - { package: vscode, path: srcpkgs/vscode, arch: x86_64, host: x86_64, libc: glibc, platform: linux/amd64, test: 0, restricted: 1 }
+        arch: ${{ fromJSON(needs.prepare.outputs.architectures) }}
 
     steps:
       - name: Prepare container
@@ -63,7 +101,7 @@ jobs:
         working-directory: void-packages
         run: |
           cat <<EOF > etc/conf
-          $(if [ "${{ matrix.restricted }}" = "1" ]; then echo XBPS_ALLOW_RESTRICTED=yes; fi)
+          $(if [ "${{ inputs.restricted }}" = "yes" ]; then echo XBPS_ALLOW_RESTRICTED=yes; fi)
           XBPS_ALLOW_CHROOT_BREAKOUT=yes
           XBPS_CHROOT_CMD=ethereal
           XBPS_MIRROR=https://repo-fastly.voidlinux.org/current
@@ -71,9 +109,11 @@ jobs:
           ln -s / masterdir
 
       - name: Merge template
+        env:
+          PACKAGE: ${{ inputs.package || 'glsl_analyzer' }}
         run: |
-          rm -fr "void-packages/${{ matrix.path }}"
-          cp -fr "${{ matrix.path }}" "void-packages/srcpkgs/"
+          rm -fr "void-packages/srcpkgs/$PACKAGE"
+          cp -fr "srcpkgs/$PACKAGE" "void-packages/srcpkgs/"
 
       - name: Prepare xbps-src
         working-directory: void-packages
@@ -81,8 +121,10 @@ jobs:
 
       - name: Build package
         working-directory: void-packages
+        env:
+          PACKAGE: ${{ inputs.package || 'glsl_analyzer' }}
         run: |
-          /bin/bash ./xbps-src -j$(nproc) pkg "${{ matrix.package }}"
+          /bin/bash ./xbps-src -j$(nproc) pkg "$PACKAGE"
 
       - name: Sign and index
         working-directory: void-packages/hostdir/binpkgs
@@ -90,7 +132,7 @@ jobs:
           PRIV_KEY: ${{ secrets.PRIV_KEY }}
         run: |
           repo_dir="."
-          if [ "${{ matrix.restricted }}" = "1" ]; then
+          if [ "${{ inputs.restricted }}" = "yes" ]; then
             repo_dir="nonfree"
           fi
           cd "$repo_dir"
@@ -103,6 +145,6 @@ jobs:
       - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.package }}-${{ matrix.arch }}
+          name: ${{ inputs.package || 'glsl_analyzer' }}-${{ matrix.arch }}
           path: void-packages/hostdir/binpkgs/*
           retention-days: 7
