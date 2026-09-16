@@ -3,8 +3,7 @@ pkgname=glsl_analyzer
 version=1.7.1
 revision=1
 archs="x86_64* aarch64*"
-provides="glsl_analyzer-${version}_${revision}"
-conflicts="glsl_analyzer>=0"
+create_wrksrc=yes
 short_desc="Language server for the GLSL shading language"
 maintainer="VoizLinux <iz@anrix.org>"
 license="GPL-3.0-only"
@@ -23,7 +22,7 @@ case "$XBPS_TARGET_MACHINE" in
 		;;
 esac
 
-
 do_install() {
-	vbin "${wrksrc}/bin/glsl_analyzer"
+
+	vbin bin/glsl_analyzer
 }
