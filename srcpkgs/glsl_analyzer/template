@@ -25,5 +25,5 @@ esac
 
 
 do_install() {
-	vbin bin/glsl_analyzer
+	vbin "${wrksrc}/bin/glsl_analyzer"
 }
