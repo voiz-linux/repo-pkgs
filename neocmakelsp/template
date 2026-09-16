@@ -1,0 +1,23 @@
+# Template file for 'neocmakelsp'
+pkgname=neocmakelsp
+version=0.6.22
+revision=1
+archs="x86_64"
+create_wrksrc=yes
+short_desc="Another CMake LSP"
+maintainer="VoizLinux <iz@anrix.org>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/Decodetalkers/neocmakelsp"
+
+case "$XBPS_TARGET_MACHINE" in
+	x86_64)
+		_filename="neocmakelsp-x86_64-unknown-linux-gnu"
+		checksum=5aa92c283c3f8c71b6bbf451b9d6c298839002197395853133e4e035cdd3c817
+		;;
+esac
+
+distfiles="${homepage}/releases/download/v${version}/${_filename}"
+
+do_install() {
+    vbin ${_filename} neocmakelsp
+}

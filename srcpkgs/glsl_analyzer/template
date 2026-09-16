@@ -23,6 +23,5 @@ case "$XBPS_TARGET_MACHINE" in
 esac
 
 do_install() {
-
 	vbin bin/glsl_analyzer
 }
